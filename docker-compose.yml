@@ -1,0 +1,71 @@
+name: marketing-agent
+
+services:
+  agent:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://agent:agent@db:5432/marketing
+      REDIS_URL: redis://redis:6379
+      TWENTY_BASE_URL: http://twenty-server:3000/rest
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  worker:
+    build: .
+    command: python -m app.tasks.worker
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://agent:agent@db:5432/marketing
+      REDIS_URL: redis://redis:6379
+      TWENTY_BASE_URL: http://twenty-server:3000/rest
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: marketing
+      POSTGRES_USER: agent
+      POSTGRES_PASSWORD: agent
+    healthcheck:
+      test: pg_isready -U agent -d marketing
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["--maxmemory-policy", "noeviction"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+
+networks:
+  default:
+    name: marketing-net
