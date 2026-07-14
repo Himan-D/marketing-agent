@@ -49,6 +49,7 @@ class LeadResponse(BaseModel):
     linkedin_url: Optional[str] = None
     phone: Optional[str] = None
     about: Optional[str] = None
+    category: Optional[str] = None
     source: str = "apify_linkedin"
     source_campaign: Optional[str] = None
     stage: str = "LEAD"

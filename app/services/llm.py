@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import re
 import time
@@ -6,6 +7,7 @@ from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.core.mirrorfit_profile import get_mirrorfit_system_prompt
+from app.core.email_strategy import get_category_prompt
 from app.models.db import InteractionLog
 
 logger = logging.getLogger(__name__)
@@ -40,7 +42,8 @@ class LLMService:
                             first_name: str = "", last_name: str = "",
                             title: str = "", company: str = "",
                             industry: str = "", about: str = "",
-                            company_description: str = "") -> tuple[str, str]:
+                            company_description: str = "",
+                            category: str = "") -> tuple[str, str]:
         name = f"{first_name} {last_name}".strip() or "there"
 
         memory_context = ""
@@ -55,6 +58,10 @@ class LLMService:
             "You are a B2B sales email writer. Write concise, personalized cold emails. "
             "Keep subject under 60 chars, body under 150 words. Professional but warm."
         )
+        category_prompt = get_category_prompt(category)
+        if category_prompt:
+            system_prompt += category_prompt
+
         system_prompt += "\n\nOUTPUT ONLY THE EMAIL. First line must be 'Subject:'."
 
         user_prompt = f"""Write a cold email.
@@ -74,14 +81,17 @@ Body: <content>"""
 
         start = time.time()
         try:
-            resp = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                temperature=0.7,
-                max_tokens=2048,
+            resp = await asyncio.wait_for(
+                self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                    temperature=0.7,
+                    max_tokens=2048,
+                ),
+                timeout=20,
             )
             duration = int((time.time() - start) * 1000)
             text = resp.choices[0].message.content or ""

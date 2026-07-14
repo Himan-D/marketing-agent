@@ -30,12 +30,14 @@ class Emailer:
                       first_name: str = "", last_name: str = "",
                       title: str = "", company: str = "",
                       industry: str = "", about: str = "",
-                      company_description: str = "") -> tuple[str, str]:
+                      company_description: str = "",
+                      category: str = "") -> tuple[str, str]:
         return await self.llm.compose_email(
             db=db, lead_id=lead_id, campaign_id=campaign_id,
             first_name=first_name, last_name=last_name,
             title=title, company=company, industry=industry,
             about=about, company_description=company_description,
+            category=category,
         )
 
     async def send(self, *, to_email: str, to_name: str, subject: str,

@@ -99,6 +99,7 @@ async def compose_preview(lead_id: UUID, db: AsyncSession = Depends(get_db)):
             company=lead.company or "",
             industry=lead.industry or "",
             about=lead.about or "",
+            category=lead.category or "",
         )
         return EmailComposePreview(
             lead_id=lead_id, subject=subject, body=body,
@@ -172,7 +173,7 @@ async def trigger_email_from_twenty(
         # Set status to QUEUED in Twenty
         logger.info("trigger-email: set QUEUED status in Twenty")
         await orch.twenty.set_email_status(body.person_id, "QUEUED")
-        logger.info("trigger-email: QUEUED done, composing")
+        logger.info("trigger-email: QUEUED done, composing (category=%s)", lead.category)
 
         # Compose
         subject, email_body = await orch.emailer.compose(
@@ -183,6 +184,7 @@ async def trigger_email_from_twenty(
             company=lead.company or "",
             industry=lead.industry or "",
             about=lead.about or "",
+            category=lead.category or "",
         )
 
         logger.info("trigger-email: compose done, subject=%s", subject)

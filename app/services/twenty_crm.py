@@ -221,6 +221,14 @@ class TwentyCRM:
             logger.debug("timeline event failed: %s", e)
             return None
 
+    async def update_person_category(self, person_id: str, category: str) -> bool:
+        try:
+            await self._patch(f"/people/{person_id}", {"leadCategory": category})
+            return True
+        except Exception as e:
+            logger.debug("update_person_category failed for %s: %s", person_id, e)
+            return False
+
     async def delete_person(self, person_id: str) -> bool:
         try:
             r = await self.client.delete(f"/people/{person_id}")

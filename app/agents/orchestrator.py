@@ -11,6 +11,7 @@ from app.agents.emailer import Emailer
 from app.agents.funnel import FunnelManager
 from app.services.twenty_crm import TwentyCRM
 from app.services.llm import LLMService
+from app.core.email_strategy import classify_lead
 
 logger = logging.getLogger(__name__)
 
@@ -65,8 +66,20 @@ class Orchestrator:
                     company_id=company_id, stage="LEAD",
                 )
 
+            category = classify_lead(
+                company=lead.company or "",
+                industry=lead.industry or "",
+                title=lead.title or "",
+                company_domain=lead.company_domain or "",
+                about=lead.about or "",
+            )
+
+            if person_id:
+                await self.twenty.update_person_category(person_id, category)
+
             db_lead = Lead(
                 campaign_id=campaign_id,
+                category=category,
                 first_name=lead.first_name, last_name=lead.last_name,
                 email=lead.email, title=lead.title,
                 company=lead.company, company_domain=lead.company_domain,
@@ -130,6 +143,7 @@ class Orchestrator:
             company=lead.company or "",
             industry=lead.industry or "",
             about=lead.about or "",
+            category=lead.category or "",
         )
 
         start = time.time()

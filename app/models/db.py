@@ -52,6 +52,7 @@ class Lead(Base):
     linkedin_url = Column(String(500), nullable=True)
     phone = Column(String(50), nullable=True)
     about = Column(Text, nullable=True)
+    category = Column(String(50), nullable=True)
     source = Column(String(50), nullable=False, default="apify_linkedin")
     source_campaign = Column(String(255), nullable=True)
 
